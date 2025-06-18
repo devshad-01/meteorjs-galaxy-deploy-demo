@@ -3,16 +3,21 @@
 ## Issue Encountered & Solution
 
 ### Problem
+
 When deploying to Meteor Galaxy through the dashboard, the deployment was failing with:
+
 ```
 /bin/sh: 1: Demo: not found
 ```
 
 ### Root Cause
+
 Environment variables with spaces (like `APP_NAME=Meteor Demo App`) were not properly quoted, causing the shell to interpret "Demo" as a separate command during the build process.
 
 ### Solution
+
 Quote all environment variables that contain spaces or special characters:
+
 ```bash
 # ❌ Wrong - causes shell parsing errors
 APP_NAME=Meteor Demo App
@@ -24,12 +29,14 @@ APP_NAME="Meteor Demo App"
 ## 📋 Safe Deployment Checklist
 
 ### 1. Environment Variables (.env file)
+
 Ensure all values are properly quoted:
+
 ```bash
 # Database Configuration
 MONGO_URL="mongodb+srv://user:pass@cluster.mongodb.net/dbname?retryWrites=true&w=majority"
 
-# Server Configuration  
+# Server Configuration
 ROOT_URL="https://your-app.meteorapp.com"
 PORT="3000"
 
@@ -44,10 +51,12 @@ SECRET_KEY="your-secret-key"
 ```
 
 ### 2. Settings Files
+
 - `settings.json` - Development settings
 - `settings-production.json` - Production settings
 
 Use actual values in settings.json for Galaxy deployment:
+
 ```json
 {
   "public": {
@@ -63,6 +72,7 @@ Use actual values in settings.json for Galaxy deployment:
 ```
 
 ### 3. Galaxy Dashboard Deployment Steps
+
 1. Import your repository to Galaxy
 2. In deployment settings, add: `--settings settings.json`
 3. Set environment variables in Galaxy dashboard (if needed)
@@ -71,26 +81,30 @@ Use actual values in settings.json for Galaxy deployment:
 ### 4. Common Pitfalls & Solutions
 
 #### ❌ Unquoted Environment Variables
+
 ```bash
 APP_NAME=My App Name  # Causes "My" command not found
 ```
 
 #### ✅ Properly Quoted
+
 ```bash
 APP_NAME="My App Name"  # Works correctly
 ```
 
 #### ❌ Environment Variable Placeholders in settings.json
+
 ```json
 {
-  "appName": "APP_NAME"  // Galaxy tries to use literal "APP_NAME"
+  "appName": "APP_NAME" // Galaxy tries to use literal "APP_NAME"
 }
 ```
 
 #### ✅ Actual Values in settings.json
+
 ```json
 {
-  "appName": "My App Name"  // Uses the actual app name
+  "appName": "My App Name" // Uses the actual app name
 }
 ```
 
@@ -111,6 +125,7 @@ APP_NAME="My App Name"  # Works correctly
 ## ✅ Verification Steps
 
 After successful deployment:
+
 1. Check app loads at your Galaxy URL
 2. Verify configuration displays correctly in your app
 3. Test API endpoints (like `/api/info`)
@@ -138,6 +153,7 @@ Application process starting, version 1
 ```
 
 **Key indicators of success:**
+
 - ✅ "Successfully built version 1"
 - ✅ "Application process starting"
 - ✅ Server startup logs showing proper configuration

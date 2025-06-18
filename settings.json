@@ -13,7 +13,8 @@
     "backblaze": {
       "keyId": "0053d4e0404e2470000000004",
       "keyName": "demo-key",
-      "applicationKey": "K005ytX6xYlAf7qxZVh87JyzPbDQ6+E"
+      "applicationKey": "K005ytX6xYlAf7qxZVh87JyzPbDQ6+E",
+      "bucketName": "demo-deploy"
     }
   }
 }

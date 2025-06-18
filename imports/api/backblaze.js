@@ -25,14 +25,16 @@ class BackblazeService {
       await this.b2.authorize();
       console.log('✅ Backblaze authorized successfully');
 
-      // Get bucket (we'll use the first available bucket)
+      // Get bucket by name
       const response = await this.b2.listBuckets();
-      if (response.data.buckets.length > 0) {
-        this.bucketId = response.data.buckets[0].bucketId;
-        console.log('📦 Using bucket:', response.data.buckets[0].bucketName);
-      } else {
-        throw new Error('No buckets found in Backblaze account');
+      const bucket = response.data.buckets.find(b => b.bucketName === settings.bucketName);
+      
+      if (!bucket) {
+        throw new Error(`Bucket "${settings.bucketName}" not found. Available buckets: ${response.data.buckets.map(b => b.bucketName).join(', ')}`);
       }
+      
+      this.bucketId = bucket.bucketId;
+      console.log('📦 Using bucket:', bucket.bucketName, 'ID:', this.bucketId);
 
       this.initialized = true;
     } catch (error) {
