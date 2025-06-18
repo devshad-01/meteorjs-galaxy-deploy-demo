@@ -1,0 +1,14 @@
+{
+  "public": {
+    "appName": "APP_NAME",
+    "version": "APP_VERSION",
+    "environment": "production"
+  },
+  "private": {
+    "serverPort": "PORT",
+    "mongoUrl": "MONGO_URL",
+    "secret": "SECRET_KEY",
+    "apiKey": "API_KEY",
+    "debugMode": "DEBUG_MODE"
+  }
+}
