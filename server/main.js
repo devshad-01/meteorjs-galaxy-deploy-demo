@@ -5,6 +5,12 @@ import { backblazeService } from '/imports/api/backblaze';
 import { Files } from '/imports/api/files';
 import '/imports/api/files';
 
+// Set MONGO_URL from settings if not already set
+if (!process.env.MONGO_URL && Meteor.settings.private?.mongoUrl) {
+  process.env.MONGO_URL = Meteor.settings.private.mongoUrl;
+  console.log('🗄️  Setting MONGO_URL from settings.json');
+}
+
 // Configure multer for file uploads
 const upload = multer({ 
   storage: multer.memoryStorage(),

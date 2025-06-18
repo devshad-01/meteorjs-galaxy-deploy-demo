@@ -1,14 +1,14 @@
 {
   "public": {
-    "appName": "APP_NAME",
-    "version": "APP_VERSION",
+    "appName": "Meteor Demo App - Production",
+    "version": "1.0.0",
     "environment": "production"
   },
   "private": {
-    "serverPort": "PORT",
-    "mongoUrl": "MONGO_URL",
-    "secret": "SECRET_KEY",
-    "apiKey": "API_KEY",
-    "debugMode": "DEBUG_MODE"
+    "serverPort": 80,
+    "mongoUrl": "mongodb+srv://shad:admin123@cluster0.numgyjb.mongodb.net/test?retryWrites=true&w=majority",
+    "secret": "production-secret-key",
+    "apiKey": "production-api-key",
+    "debugMode": false
   }
 }

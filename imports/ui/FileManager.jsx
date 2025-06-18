@@ -8,11 +8,20 @@ export const FileManager = () => {
   const [editingFile, setEditingFile] = useState(null);
   const [newName, setNewName] = useState('');
 
+  // Helper function to check if file is an image
+  const isImage = (fileType) => {
+    return fileType && fileType.startsWith('image/');
+  };
+
   // Subscribe to files and get them
   const files = useTracker(() => {
     const handle = Meteor.subscribe('files');
     return Files.find({}, { sort: { createdAt: -1 } }).fetch();
   }, []);
+
+  // Separate images from other files
+  const images = files.filter(file => isImage(file.type));
+  const otherFiles = files.filter(file => !isImage(file.type));
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
@@ -78,6 +87,37 @@ export const FileManager = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const ImagePreview = ({ file }) => {
+    if (!isImage(file.type)) return null;
+
+    return (
+      <div style={{ 
+        marginTop: '10px',
+        textAlign: 'center'
+      }}>
+        <img 
+          src={file.backblazeUrl}
+          alt={file.name}
+          style={{
+            maxWidth: '200px',
+            maxHeight: '200px',
+            borderRadius: '8px',
+            border: '2px solid #ddd',
+            cursor: 'pointer'
+          }}
+          onClick={() => window.open(file.backblazeUrl, '_blank')}
+          onError={(e) => {
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'block';
+          }}
+        />
+        <div style={{ display: 'none', color: '#999', padding: '20px' }}>
+          🖼️ Image preview not available
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div style={{ 
       backgroundColor: '#f8f9fa', 
@@ -101,110 +141,252 @@ export const FileManager = () => {
           onChange={handleFileUpload}
           disabled={uploading}
           style={{ marginBottom: '10px' }}
+          accept="image/*,*" // Accept images and all files
         />
         {uploading && <p>⏳ Uploading...</p>}
+        <p style={{ fontSize: '12px', color: '#666', margin: '5px 0 0 0' }}>
+          💡 Tip: Upload images to see them in the gallery below!
+        </p>
       </div>
+
+      {/* Image Gallery Section */}
+      {images.length > 0 && (
+        <div style={{ 
+          backgroundColor: 'white', 
+          padding: '15px', 
+          borderRadius: '8px',
+          marginBottom: '20px'
+        }}>
+          <h3>🖼️ Image Gallery ({images.length})</h3>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: '15px',
+            marginTop: '15px'
+          }}>
+            {images.map((image) => (
+              <div 
+                key={image._id}
+                style={{
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  backgroundColor: '#fafafa'
+                }}
+              >
+                <img 
+                  src={image.backblazeUrl}
+                  alt={image.name}
+                  style={{
+                    width: '100%',
+                    height: '150px',
+                    objectFit: 'cover',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => window.open(image.backblazeUrl, '_blank')}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+                <div style={{ 
+                  display: 'none', 
+                  height: '150px',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#999',
+                  backgroundColor: '#f8f9fa'
+                }}>
+                  🖼️ Preview not available
+                </div>
+                <div style={{ padding: '10px' }}>
+                  <div style={{ 
+                    fontWeight: 'bold', 
+                    fontSize: '14px',
+                    marginBottom: '5px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {image.name}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+                    {formatFileSize(image.size)}
+                  </div>
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    <a 
+                      href={image.backblazeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        flex: 1,
+                        textAlign: 'center',
+                        padding: '6px',
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        textDecoration: 'none',
+                        borderRadius: '4px',
+                        fontSize: '11px'
+                      }}
+                    >
+                      📥 View
+                    </a>
+                    <button
+                      onClick={() => handleDelete(image._id)}
+                      style={{
+                        flex: 1,
+                        padding: '6px',
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Files List */}
       <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px' }}>
-        <h3>📋 Files ({files.length})</h3>
+        <h3>📋 All Files ({files.length})</h3>
         
         {files.length === 0 ? (
           <p>No files uploaded yet. Upload your first file above! 👆</p>
         ) : (
-          <div style={{ display: 'grid', gap: '10px' }}>
+          <div style={{ display: 'grid', gap: '15px' }}>
             {files.map((file) => (
               <div 
                 key={file._id}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px',
+                  padding: '15px',
                   border: '1px solid #ddd',
-                  borderRadius: '4px',
+                  borderRadius: '8px',
                   backgroundColor: '#fafafa'
                 }}
               >
-                <div style={{ flex: 1 }}>
-                  {editingFile === file._id ? (
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                      <input
-                        type="text"
-                        value={newName}
-                        onChange={(e) => setNewName(e.target.value)}
-                        style={{ flex: 1, padding: '5px' }}
-                      />
-                      <button onClick={handleUpdate} style={{ padding: '5px 10px' }}>
-                        ✅ Save
-                      </button>
-                      <button 
-                        onClick={() => setEditingFile(null)}
-                        style={{ padding: '5px 10px' }}
-                      >
-                        ❌ Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <strong>{file.name}</strong>
-                      <br />
-                      <small>
-                        📊 {formatFileSize(file.size)} • 
-                        🗓️ {new Date(file.createdAt).toLocaleDateString()} •
-                        📁 {file.type}
-                      </small>
-                    </>
-                  )}
-                </div>
-                
-                <div style={{ display: 'flex', gap: '5px' }}>
-                  <a 
-                    href={file.backblazeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      padding: '5px 10px',
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      textDecoration: 'none',
-                      borderRadius: '4px',
-                      fontSize: '12px'
-                    }}
-                  >
-                    📥 Download
-                  </a>
+                {/* File Info Section */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: isImage(file.type) ? '15px' : '0'
+                }}>
+                  <div style={{ flex: 1 }}>
+                    {editingFile === file._id ? (
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          value={newName}
+                          onChange={(e) => setNewName(e.target.value)}
+                          style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                        />
+                        <button onClick={handleUpdate} style={{ 
+                          padding: '8px 12px', 
+                          backgroundColor: '#28a745',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}>
+                          ✅ Save
+                        </button>
+                        <button 
+                          onClick={() => setEditingFile(null)}
+                          style={{ 
+                            padding: '8px 12px',
+                            backgroundColor: '#6c757d',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          ❌ Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
+                          <strong style={{ fontSize: '16px' }}>{file.name}</strong>
+                          {isImage(file.type) && <span style={{ 
+                            backgroundColor: '#17a2b8', 
+                            color: 'white', 
+                            padding: '2px 8px', 
+                            borderRadius: '12px', 
+                            fontSize: '12px' 
+                          }}>🖼️ Image</span>}
+                        </div>
+                        <div style={{ color: '#666', fontSize: '14px' }}>
+                          📊 {formatFileSize(file.size)} • 
+                          🗓️ {new Date(file.createdAt).toLocaleDateString()} • 
+                          📁 {file.type}
+                        </div>
+                      </>
+                    )}
+                  </div>
                   
-                  <button
-                    onClick={() => handleEdit(file)}
-                    style={{
-                      padding: '5px 10px',
-                      backgroundColor: '#28a745',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ✏️ Edit
-                  </button>
-                  
-                  <button
-                    onClick={() => handleDelete(file._id)}
-                    style={{
-                      padding: '5px 10px',
-                      backgroundColor: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    🗑️ Delete
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px', marginLeft: '15px' }}>
+                    <a 
+                      href={file.backblazeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        padding: '8px 12px',
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        textDecoration: 'none',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      📥 Download
+                    </a>
+                    
+                    <button
+                      onClick={() => handleEdit(file)}
+                      style={{
+                        padding: '8px 12px',
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ✏️ Edit
+                    </button>
+                    
+                    <button
+                      onClick={() => handleDelete(file._id)}
+                      style={{
+                        padding: '8px 12px',
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
                 </div>
+
+                {/* Image Preview Section */}
+                <ImagePreview file={file} />
               </div>
             ))}
           </div>
