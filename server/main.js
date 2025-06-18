@@ -1,5 +1,17 @@
 import { Meteor } from 'meteor/meteor';
 import { WebApp } from 'meteor/webapp';
+import multer from 'multer';
+import { backblazeService } from '/imports/api/backblaze';
+import { Files } from '/imports/api/files';
+import '/imports/api/files';
+
+// Configure multer for file uploads
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
 // Function to substitute environment variables in settings
 function substituteEnvVars(obj) {
@@ -45,6 +57,7 @@ Meteor.startup(() => {
   console.log('🗄️  MongoDB URL:', privateSettings.mongoUrl ? 'Configured ✓' : 'Not configured ✗');
   console.log('🔑 API Key:', privateSettings.apiKey ? 'Configured ✓' : 'Not configured ✗');
   console.log('🛠️  Debug Mode:', privateSettings.debugMode || false);
+  console.log('☁️  Backblaze:', privateSettings.backblaze ? 'Configured ✓' : 'Not configured ✗');
   
   // Environment variables examples
   console.log('📍 ROOT_URL:', process.env.ROOT_URL || 'http://localhost:3000');
@@ -64,8 +77,108 @@ Meteor.startup(() => {
       port: process.env.PORT || privateSettings.serverPort || 3000,
       rootUrl: process.env.ROOT_URL || 'http://localhost:3000',
       hasApiKey: !!privateSettings.apiKey,
-      debugMode: privateSettings.debugMode
+      debugMode: privateSettings.debugMode,
+      backblazeConfigured: !!privateSettings.backblaze
     }));
+  });
+
+  // File upload endpoint
+  WebApp.connectHandlers.use('/api/upload', upload.single('file'), async (req, res) => {
+    try {
+      console.log('📤 Upload request received');
+      
+      if (!req.file) {
+        console.log('❌ No file in request');
+        res.writeHead(400, {'Content-Type': 'application/json'});
+        res.end(JSON.stringify({ error: 'No file uploaded' }));
+        return;
+      }
+
+      console.log('📤 Uploading file:', req.file.originalname);
+
+      // Check if Backblaze is configured
+      const settings = global.processedSettings || {};
+      if (!settings.private?.backblaze) {
+        console.log('⚠️  Backblaze not configured, saving file info only');
+        
+        // Just save file info to MongoDB without Backblaze upload
+        const fileId = await Files.insertAsync({
+          name: req.file.originalname,
+          size: req.file.size,
+          type: req.file.mimetype,
+          uploadedAt: new Date(),
+          uploadedBy: 'anonymous',
+          status: 'local-only'
+        });
+
+        res.writeHead(200, {'Content-Type': 'application/json'});
+        res.end(JSON.stringify({
+          success: true,
+          fileId: fileId,
+          message: 'File info saved (Backblaze not configured)'
+        }));
+        return;
+      }
+
+      // Try to upload to Backblaze
+      try {
+        const result = await backblazeService.uploadFile(
+          req.file.originalname,
+          req.file.buffer,
+          req.file.mimetype
+        );
+
+        // Save to MongoDB with Backblaze info
+        const fileId = await Files.insertAsync({
+          name: req.file.originalname,
+          size: req.file.size,
+          type: req.file.mimetype,
+          backblazeUrl: result.downloadUrl,
+          backblazeFileId: result.fileId,
+          uploadedAt: new Date(),
+          uploadedBy: 'anonymous',
+          status: 'uploaded'
+        });
+
+        res.writeHead(200, {'Content-Type': 'application/json'});
+        res.end(JSON.stringify({
+          success: true,
+          fileId: fileId,
+          downloadUrl: result.downloadUrl
+        }));
+
+      } catch (backblazeError) {
+        console.error('❌ Backblaze upload failed:', backblazeError.message);
+        
+        // Save file info anyway, but mark as failed
+        const fileId = await Files.insertAsync({
+          name: req.file.originalname,
+          size: req.file.size,
+          type: req.file.mimetype,
+          uploadedAt: new Date(),
+          uploadedBy: 'anonymous',
+          status: 'upload-failed',
+          error: backblazeError.message
+        });
+
+        res.writeHead(200, {'Content-Type': 'application/json'});
+        res.end(JSON.stringify({
+          success: true,
+          fileId: fileId,
+          message: 'File info saved but upload to Backblaze failed',
+          error: backblazeError.message
+        }));
+      }
+
+    } catch (error) {
+      console.error('❌ Upload error:', error.message);
+      console.error(error.stack);
+      res.writeHead(500, {'Content-Type': 'application/json'});
+      res.end(JSON.stringify({ 
+        error: error.message,
+        details: error.stack 
+      }));
+    }
   });
   
   console.log('✅ Server ready!');
@@ -82,7 +195,8 @@ Meteor.methods({
         port: settings.private?.serverPort || process.env.PORT,
         hasApiKey: !!settings.private?.apiKey,
         hasSecret: !!settings.private?.secret,
-        debugMode: settings.private?.debugMode
+        debugMode: settings.private?.debugMode,
+        hasBackblaze: !!settings.private?.backblaze
       }
     };
   }

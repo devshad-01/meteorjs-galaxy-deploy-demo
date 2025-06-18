@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
+import { FileManager } from './FileManager';
 
 export const App = () => {
   const [serverInfo, setServerInfo] = useState(null);
@@ -26,7 +27,7 @@ export const App = () => {
     <div style={{ 
       padding: '20px', 
       fontFamily: 'Arial, sans-serif',
-      maxWidth: '800px',
+      maxWidth: '1000px',
       margin: '0 auto'
     }}>
       <h1>🚀 {settings.appName || 'Meteor Deployment Demo'}</h1>
@@ -58,6 +59,7 @@ export const App = () => {
             <p><strong>Server Environment:</strong> {serverInfo.environment}</p>
             <p><strong>Server Port:</strong> {serverInfo.port}</p>
             <p><strong>Root URL:</strong> {serverInfo.rootUrl}</p>
+            <p><strong>Backblaze B2:</strong> {serverInfo.backblazeConfigured ? '✅ Configured' : '❌ Not configured'}</p>
             <p><strong>Server Time:</strong> {new Date(serverInfo.timestamp).toLocaleString()}</p>
           </div>
         ) : (
@@ -65,20 +67,26 @@ export const App = () => {
         )}
       </div>
 
+      {/* File Manager Component */}
+      <FileManager />
+
       <div style={{ 
         backgroundColor: '#fff3cd', 
         padding: '15px', 
         borderRadius: '8px',
         marginBottom: '20px'
       }}>
-        <h2>🎯 Deployment Testing</h2>
+        <h2>🎯 Features Demonstrated</h2>
         <p>This app demonstrates:</p>
         <ul>
           <li>✅ Using settings.json for configuration</li>
           <li>✅ Environment variables support</li>
           <li>✅ Different settings for dev/production</li>
-          <li>✅ Simple API endpoint</li>
+          <li>✅ Simple API endpoints</li>
           <li>✅ Client-server configuration sharing</li>
+          <li>✅ CRUD operations with MongoDB</li>
+          <li>✅ File uploads to Backblaze B2</li>
+          <li>✅ File management (Create, Read, Update, Delete)</li>
         </ul>
       </div>
 
@@ -91,6 +99,7 @@ export const App = () => {
         <p><strong>Development:</strong> <code>npm run dev</code></p>
         <p><strong>Production:</strong> <code>npm run prod</code></p>
         <p><strong>Build:</strong> <code>npm run build</code></p>
+        <p><strong>Galaxy:</strong> Use dashboard with <code>--settings settings.json</code></p>
       </div>
     </div>
   );

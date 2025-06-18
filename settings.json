@@ -9,6 +9,11 @@
     "mongoUrl": "mongodb+srv://shad:admin123@cluster0.numgyjb.mongodb.net/test?retryWrites=true&w=majority",
     "secret": "your-secret-key-here",
     "apiKey": "your-api-key-here",
-    "debugMode": true
+    "debugMode": true,
+    "backblaze": {
+      "keyId": "0053d4e0404e2470000000004",
+      "keyName": "demo-key",
+      "applicationKey": "K005ytX6xYlAf7qxZVh87JyzPbDQ6+E"
+    }
   }
 }
