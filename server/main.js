@@ -1,7 +1,14 @@
 import { Meteor } from 'meteor/meteor';
+import '../imports/api/images';
+
+// Set MONGO_URL from settings if not already set
+if (!process.env.MONGO_URL && Meteor.settings.private?.mongoUrl) {
+  process.env.MONGO_URL = Meteor.settings.private.mongoUrl;
+  console.log('🗄️  Setting MONGO_URL from settings.json');
+}
 
 Meteor.startup(() => {
-  console.log('� Testing settings.json...');
+  console.log('🚀 Server starting up...');
   
   // Test settings.json loading
   console.log('Settings loaded:', !!Meteor.settings);
@@ -10,7 +17,9 @@ Meteor.startup(() => {
   
   if (Meteor.settings.private) {
     console.log('MongoDB URL configured:', !!Meteor.settings.private.mongoUrl);
+    console.log('MONGO_URL set:', !!process.env.MONGO_URL);
   }
   
   console.log('✅ Settings test complete!');
+  console.log('📸 Image CRUD system ready!');
 });

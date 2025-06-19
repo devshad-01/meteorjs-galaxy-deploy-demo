@@ -1,5 +1,4 @@
 {
-
   "private": {
     "serverPort": 80,
     "mongoUrl": "mongodb+srv://shad:admin123@cluster0.numgyjb.mongodb.net/test?retryWrites=true&w=majority",
