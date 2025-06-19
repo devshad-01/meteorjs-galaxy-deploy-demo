@@ -1,13 +1,6 @@
 import { Meteor } from 'meteor/meteor';
 
-// CRITICAL: Set MONGO_URL from settings BEFORE importing any collections
-if (!process.env.MONGO_URL && Meteor.settings?.private?.mongoUrl) {
-  process.env.MONGO_URL = Meteor.settings.private.mongoUrl;
-  console.log('🗄️  Setting MONGO_URL from settings.json:', 
-    Meteor.settings.private.mongoUrl.substring(0, 20) + '...');
-}
-
-// Now import the images API after MONGO_URL is set
+// Import the images API - Galaxy will have already set MONGO_URL from settings
 import '../imports/api/images';
 
 Meteor.startup(() => {
