@@ -1,11 +1,14 @@
 import { Meteor } from 'meteor/meteor';
-import '../imports/api/images';
 
-// Set MONGO_URL from settings if not already set
-if (!process.env.MONGO_URL && Meteor.settings.private?.mongoUrl) {
+// CRITICAL: Set MONGO_URL from settings BEFORE importing any collections
+if (!process.env.MONGO_URL && Meteor.settings?.private?.mongoUrl) {
   process.env.MONGO_URL = Meteor.settings.private.mongoUrl;
-  console.log('🗄️  Setting MONGO_URL from settings.json');
+  console.log('🗄️  Setting MONGO_URL from settings.json:', 
+    Meteor.settings.private.mongoUrl.substring(0, 20) + '...');
 }
+
+// Now import the images API after MONGO_URL is set
+import '../imports/api/images';
 
 Meteor.startup(() => {
   console.log('🚀 Server starting up...');
