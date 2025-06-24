@@ -9,6 +9,7 @@ A simple Meteor application with image CRUD functionality, demonstrating proper 
 ## 📋 Project Overview
 
 This is a minimal Meteor application that provides:
+
 - ✅ Simple image management (Create, Read, Update, Delete)
 - ✅ MongoDB Atlas integration
 - ✅ Backblaze B2 cloud storage configuration
@@ -109,6 +110,7 @@ Create `settings.json` with the Galaxy-specific format:
 ### Step 3: Deploy to Galaxy
 
 1. **Via Galaxy Dashboard:**
+
    - Go to [galaxy.meteor.com](https://galaxy.meteor.com)
    - Connect your Git repository
    - Configure deployment settings
@@ -124,17 +126,20 @@ Create `settings.json` with the Galaxy-specific format:
 ### Local Development
 
 1. **Clone repository:**
+
    ```bash
    git clone <repository-url>
    cd meteorjs-deployment-demo
    ```
 
 2. **Install dependencies:**
+
    ```bash
    meteor npm install
    ```
 
 3. **Run locally:**
+
    ```bash
    meteor run --settings settings.json
    ```
@@ -159,7 +164,8 @@ PORT=3000
 
 **Problem:** Galaxy can't connect to MongoDB
 
-**Solution:** 
+**Solution:**
+
 - Use the Galaxy-specific format in `settings.json`:
   ```json
   {
@@ -176,6 +182,7 @@ PORT=3000
 **Problem:** Missing or corrupted `.meteor` folder
 
 **Solution:**
+
 - Ensure `.meteor` folder is committed to Git
 - Check `.meteor/release` file exists
 - Only `.meteor/local` should be in `.gitignore`
@@ -185,12 +192,13 @@ PORT=3000
 **Problem:** Using deprecated synchronous database operations
 
 **Solution:** Use async operations:
+
 ```javascript
 // ❌ Old way
-Images.insert(data)
+Images.insert(data);
 
-// ✅ New way  
-await Images.insertAsync(data)
+// ✅ New way
+await Images.insertAsync(data);
 ```
 
 ### Issue 4: Settings not loading
@@ -247,4 +255,4 @@ MIT License - feel free to use this as a template for your own Meteor deployment
 
 ---
 
-*This deployment guide was created after successfully troubleshooting a 2-day Galaxy deployment issue. The key was understanding Galaxy's specific requirements for settings.json configuration.*
+_This deployment guide was created after successfully troubleshooting a 2-day Galaxy deployment issue. The key was understanding Galaxy's specific requirements for settings.json configuration._

@@ -1,4 +1,7 @@
 import { Meteor } from 'meteor/meteor';
+import { Buffer } from 'buffer';
+import B2 from 'backblaze-b2';
+import { check } from 'meteor/check';
 
 // Import the images API - Galaxy will have already set MONGO_URL from settings
 import '../imports/api/images';
@@ -58,4 +61,49 @@ Meteor.startup(() => {
   console.log('='.repeat(50));
   console.log('✅ Settings analysis complete!');
   console.log('📸 Image CRUD system ready!');
+});
+
+Meteor.methods({
+  async 'images.uploadToB2'(fileName, fileType, fileData) {
+    console.log('[Backblaze] Upload method called:', fileName, fileType);
+    check(fileName, String);
+    check(fileType, String);
+    check(fileData, Object);
+    try {
+      if (!Meteor.settings.private || !Meteor.settings.private.backblaze) {
+        throw new Meteor.Error('Backblaze credentials not configured');
+      }
+      const b2 = new B2({
+        applicationKeyId: Meteor.settings.private.backblaze.keyId,
+        applicationKey: Meteor.settings.private.backblaze.applicationKey,
+      });
+      await b2.authorize();
+      const bucketName = Meteor.settings.private.backblaze.bucketName;
+      const bucketId = (await b2.listBuckets()).data.buckets.find(b => b.bucketName === bucketName)?.bucketId;
+      if (!bucketId) throw new Meteor.Error('Bucket not found');
+      const base64 = fileData.base64;
+      if (typeof base64 !== 'string') {
+        throw new Meteor.Error('invalid-file', 'File data is not a valid base64 string');
+      }
+      const buffer = Buffer.from(base64.split(',')[1], 'base64');
+      const uploadUrlResp = await b2.getUploadUrl({ bucketId });
+      const uploadResp = await b2.uploadFile({
+        uploadUrl: uploadUrlResp.data.uploadUrl,
+        uploadAuthToken: uploadUrlResp.data.authorizationToken,
+        fileName,
+        data: buffer,
+        contentType: fileType,
+      });
+      if (!uploadResp || !uploadResp.data || !uploadResp.data.fileId) {
+        console.error('[Backblaze] Upload failed, no fileId:', uploadResp);
+        throw new Meteor.Error('upload-failed', 'Backblaze did not return a fileId');
+      }
+      const fileUrl = `https://f000.backblazeb2.com/file/${bucketName}/${fileName}`;
+      console.log('[Backblaze] Upload successful:', fileUrl);
+      return { url: fileUrl };
+    } catch (err) {
+      console.error('[Backblaze] Upload error:', err);
+      throw new Meteor.Error('backblaze-upload-failed', err.message || err.reason || 'Unknown error');
+    }
+  },
 });

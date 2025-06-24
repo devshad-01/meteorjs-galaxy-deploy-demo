@@ -4,18 +4,18 @@
       "MONGO_URL": "mongodb+srv://shad:admin123@cluster0.numgyjb.mongodb.net/test?retryWrites=true&w=majority",
       "ROOT_URL": "https://demo-deploy.meteorapp.com"
     }
+  },
+  "private": {
+    "serverPort": 80,
+    "mongoUrl": "mongodb+srv://shad:admin123@cluster0.numgyjb.mongodb.net/test?retryWrites=true&w=majority",
+    "secret": "production-secret-key",
+    "apiKey": "production-api-key",
+    "debugMode": false,
+    "backblaze": {
+      "keyId": "0053d4e0404e2470000000004",
+      "keyName": "demo-key",
+      "applicationKey": "K005ytX6xYlAf7qxZVh87JyzPbDQ6+E",
+      "bucketName": "demo-deploy"
+    }
   }
-  // "private": {
-  //   "serverPort": 80,
-  //   "mongoUrl": "mongodb+srv://shad:admin123@cluster0.numgyjb.mongodb.net/test?retryWrites=true&w=majority",
-  //   "secret": "production-secret-key",
-  //   "apiKey": "production-api-key",
-  //   "debugMode": false,
-  //   "backblaze": {
-  //     "keyId": "0053d4e0404e2470000000004",
-  //     "keyName": "demo-key",
-  //     "applicationKey": "K005ytX6xYlAf7qxZVh87JyzPbDQ6+E",
-  //     "bucketName": "demo-deploy"
-  //   }
-  // }
 }

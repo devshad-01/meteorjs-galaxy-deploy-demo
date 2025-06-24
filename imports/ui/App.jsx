@@ -8,6 +8,10 @@ export const App = () => {
   const [url, setUrl] = useState('');
   const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState(null);
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   // Subscribe to images and get data
   const { images, isLoading } = useTracker(() => {
@@ -18,29 +22,78 @@ export const App = () => {
     };
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !url) return;
+    setErrorMsg('');
+    setSuccessMsg('');
+    setLoading(true);
+    if (!name || (!url && !file)) {
+      setErrorMsg('Please provide a title and an image.');
+      setLoading(false);
+      return;
+    }
 
     if (editingId) {
-      // Update existing image
-      Meteor.call('images.update', editingId, name, description, (error) => {
-        if (!error) {
+      Meteor.callAsync('images.update', editingId, name, description)
+        .then(() => {
           setEditingId(null);
           setName('');
           setUrl('');
           setDescription('');
-        }
-      });
+          setFile(null);
+          setSuccessMsg('Post updated!');
+        })
+        .catch((error) => {
+          setErrorMsg(error.reason || 'Failed to update post.');
+        })
+        .finally(() => setLoading(false));
     } else {
-      // Add new image
-      Meteor.call('images.insert', name, url, description, (error) => {
-        if (!error) {
+      let imageUrl = url;
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result;
+          Meteor.call('images.uploadToB2', file.name, file.type, { base64 }, async (err, result) => {
+            console.log('UploadToB2 result:', err, result);
+            if (!err && result && result.url) {
+              imageUrl = result.url;
+              try {
+                const insertResult = await Meteor.callAsync('images.insert', name, imageUrl, description);
+                console.log('Insert result:', insertResult);
+                setName('');
+                setUrl('');
+                setDescription('');
+                setFile(null);
+                setSuccessMsg('Post created!');
+              } catch (error) {
+                setErrorMsg(error.reason || error.message || 'Failed to create post.');
+                console.error('Insert error:', error);
+              } finally {
+                setLoading(false);
+              }
+            } else {
+              setLoading(false);
+              setErrorMsg((err && (err.reason || err.message)) || 'Image upload failed.');
+              console.error('Upload error:', err);
+            }
+          });
+        };
+        reader.onerror = () => { setLoading(false); setErrorMsg('Failed to read image file.'); };
+        reader.readAsDataURL(file);
+        return;
+      }
+      Meteor.callAsync('images.insert', name, imageUrl, description)
+        .then(() => {
           setName('');
           setUrl('');
           setDescription('');
-        }
-      });
+          setFile(null);
+          setSuccessMsg('Post created!');
+        })
+        .catch((error) => {
+          setErrorMsg(error.reason || 'Failed to create post.');
+        })
+        .finally(() => setLoading(false));
     }
   };
 
@@ -53,7 +106,8 @@ export const App = () => {
 
   const handleDelete = (imageId) => {
     if (confirm('Are you sure you want to delete this image?')) {
-      Meteor.call('images.remove', imageId);
+      Meteor.callAsync('images.remove', imageId)
+        .catch(() => setErrorMsg('Failed to delete post.'));
     }
   };
 
@@ -84,12 +138,18 @@ export const App = () => {
             required
           />
           <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setFile(e.target.files[0])}
+            required={!editingId && !url}
+            disabled={editingId}
+          />
+          <input
             type="url"
-            placeholder="Image URL"
+            placeholder="Image URL (optional)"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            required
-            disabled={editingId} // Don't allow URL changes when editing
+            disabled={editingId}
           />
           <textarea
             placeholder="Description (optional)"
@@ -98,8 +158,8 @@ export const App = () => {
             rows="3"
           />
           <div className="form-buttons">
-            <button type="submit">
-              {editingId ? '✏️ Update' : '➕ Add Image'}
+            <button type="submit" disabled={loading}>
+              {editingId ? '✏️ Update' : loading ? 'Uploading...' : '🚀 Post'}
             </button>
             {editingId && (
               <button type="button" onClick={handleCancel} className="cancel-btn">
@@ -108,6 +168,11 @@ export const App = () => {
             )}
           </div>
         </form>
+        <div className="form-messages">
+          {loading && <div className="loading-msg">Uploading... Please wait.</div>}
+          {errorMsg && <div className="error-msg">{errorMsg}</div>}
+          {successMsg && <div className="success-msg">{successMsg}</div>}
+        </div>
       </div>
 
       {/* Images List */}
