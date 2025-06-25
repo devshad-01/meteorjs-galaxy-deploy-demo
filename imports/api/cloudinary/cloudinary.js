@@ -6,9 +6,9 @@ import cloudinary from 'cloudinary';
 
 // Configure Cloudinary (replace with your credentials)
 cloudinary.v2.config({
-  cloud_name: Meteor.settings.cloudinary.cloud_name,
-  api_key: Meteor.settings.cloudinary.api_key,
-  api_secret: Meteor.settings.cloudinary.api_secret,
+  cloud_name: Meteor.settings.private.cloudinary.cloud_name,
+  api_key: Meteor.settings.private.cloudinary.api_key,
+  api_secret: Meteor.settings.private.cloudinary.api_secret,
 });
 
 // Middleware to parse JSON bodies with default size limit (100kb)
