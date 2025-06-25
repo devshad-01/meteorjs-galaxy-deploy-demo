@@ -5,6 +5,7 @@ import { check } from 'meteor/check';
 
 // Import the images API - Galaxy will have already set MONGO_URL from settings
 import '../imports/api/images';
+import '../imports/api/cloudinary/cloudinary';
 
 Meteor.startup(() => {
   console.log('🚀 Server starting up...');

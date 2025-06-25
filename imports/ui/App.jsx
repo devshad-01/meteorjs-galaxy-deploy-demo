@@ -12,6 +12,8 @@ export const App = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [folder, setFolder] = useState('forum_posts');
+  const [storage, setStorage] = useState('cloudinary');
 
   // Subscribe to images and get data
   const { images, isLoading } = useTracker(() => {
@@ -51,32 +53,60 @@ export const App = () => {
       let imageUrl = url;
       if (file) {
         const reader = new FileReader();
-        reader.onloadend = () => {
+        reader.onloadend = async () => {
           const base64 = reader.result;
-          Meteor.call('images.uploadToB2', file.name, file.type, { base64 }, async (err, result) => {
-            console.log('UploadToB2 result:', err, result);
-            if (!err && result && result.url) {
-              imageUrl = result.url;
-              try {
-                const insertResult = await Meteor.callAsync('images.insert', name, imageUrl, description);
-                console.log('Insert result:', insertResult);
-                setName('');
-                setUrl('');
-                setDescription('');
-                setFile(null);
-                setSuccessMsg('Post created!');
-              } catch (error) {
-                setErrorMsg(error.reason || error.message || 'Failed to create post.');
-                console.error('Insert error:', error);
-              } finally {
+          if (storage === 'cloudinary') {
+            try {
+              const response = await fetch('/api/cloudinary/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageBase64: base64, folder })
+              });
+              const data = await response.json();
+              if (response.ok && data.url) {
+                imageUrl = data.url;
+                try {
+                  const insertResult = await Meteor.callAsync('images.insert', name, imageUrl, description);
+                  setName('');
+                  setUrl('');
+                  setDescription('');
+                  setFile(null);
+                  setSuccessMsg('Post created!');
+                } catch (error) {
+                  setErrorMsg(error.reason || error.message || 'Failed to create post.');
+                } finally {
+                  setLoading(false);
+                }
+              } else {
                 setLoading(false);
+                setErrorMsg((data && data.error) || 'Image upload failed.');
               }
-            } else {
+            } catch (err) {
               setLoading(false);
-              setErrorMsg((err && (err.reason || err.message)) || 'Image upload failed.');
-              console.error('Upload error:', err);
+              setErrorMsg('Image upload failed.');
             }
-          });
+          } else if (storage === 'backblaze') {
+            Meteor.call('images.uploadToB2', file.name, file.type, { base64 }, async (err, result) => {
+              if (!err && result && result.url) {
+                imageUrl = result.url;
+                try {
+                  const insertResult = await Meteor.callAsync('images.insert', name, imageUrl, description);
+                  setName('');
+                  setUrl('');
+                  setDescription('');
+                  setFile(null);
+                  setSuccessMsg('Post created!');
+                } catch (error) {
+                  setErrorMsg(error.reason || error.message || 'Failed to create post.');
+                } finally {
+                  setLoading(false);
+                }
+              } else {
+                setLoading(false);
+                setErrorMsg((err && (err.reason || err.message)) || 'Image upload failed.');
+              }
+            });
+          }
         };
         reader.onerror = () => { setLoading(false); setErrorMsg('Failed to read image file.'); };
         reader.readAsDataURL(file);
@@ -157,6 +187,14 @@ export const App = () => {
             onChange={(e) => setDescription(e.target.value)}
             rows="3"
           />
+          <select value={folder} onChange={e => setFolder(e.target.value)} disabled={editingId}>
+            <option value="forum_posts">Forum Post</option>
+            <option value="avatars">Avatar</option>
+          </select>
+          <select value={storage} onChange={e => setStorage(e.target.value)} disabled={editingId}>
+            <option value="cloudinary">Cloudinary</option>
+            <option value="backblaze">Backblaze B2</option>
+          </select>
           <div className="form-buttons">
             <button type="submit" disabled={loading}>
               {editingId ? '✏️ Update' : loading ? 'Uploading...' : '🚀 Post'}

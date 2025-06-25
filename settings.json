@@ -17,5 +17,10 @@
       "applicationKey": "K005ytX6xYlAf7qxZVh87JyzPbDQ6+E",
       "bucketName": "demo-deploy"
     }
+  },
+  "cloudinary": {
+    "cloud_name": "dtwtcdkrl",
+    "api_key": "975887372581848",
+    "api_secret": "iU9oeTRMdPx3yCSy3Dp4zol0ul0"
   }
 }
